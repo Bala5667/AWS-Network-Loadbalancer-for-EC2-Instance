@@ -1,68 +1,105 @@
 # AWS-Network-Loadbalancer-for-EC2-Instance
 
+Primary Objective:
+Launch EC2 Instances: Deploy Linux and Windows instances with appropriate security groups.
+Configure Web Servers:
 
-1.	Create EC2 Instance with linux, security group – all tcp
-User data : 
+Linux: Install Apache, serve content, and change the listening port (e.g., 80 → 81).
+
+Windows: Configure IIS, serve content, and change the port (e.g., 80 → 8082).
+Update Firewall Rules: Allow the respective ports in both Linux (firewall-cmd) and Windows (Windows Defender Firewall).
+Create Target Groups: Register instances with health checks for Linux and Windows.
+Set Up Network Load Balancer:
+
+Create listeners for both Linux and Windows instances.
+
+Ensure requests are routed correctly based on configured ports.
+Testing: Access the NLB DNS and verify traffic distribution across both instances.
+
+Steps to achieve the above Objective:
+
+1. EC2 Instance Setup (Linux)
+I created an Amazon Linux EC2 instance with a security group allowing all TCP traffic and used the following user data script to install and configure Apache:
+
 #!/bin/bash
 sudo yum update -y
 sudo yum install -y httpd
 sudo systemctl start httpd
 sudo systemctl enable httpd
-sudo mkdir -p /var/w ww/html
+sudo mkdir -p /var/www/html
 echo "Welcome to my Facebook on EC2" | sudo tee /var/www/html/index.html > /dev/null
 sudo chmod -R 755 /var/www/html
 sudo systemctl restart httpd
 
-2.	Change port number 81 in linux that listening to 80
-command to open the configuration file in a text editor (like vi or nano):
+2. Changing Apache Port (Linux)
+To change the Apache listening port from 80 to 81, I modified the httpd.conf file:
+
+Open the configuration file:
+
 sudo nano /etc/httpd/conf/httpd.conf
-or
-sudo vi /etc/httpd/conf/httpd.conf
-Look for the following line: Search using ctrl + W
-Listen 80
-Edit to Listen 81
-Then save and exit
-Update firewall rule
-Since you're changing the port to 81, you need to allow it in the firewall:
-Command to remove old port (80)
-sudo firewall-cmd --permanent --remove-port=81/tcp 
-Command to allow new port (81)
-sudo firewall-cmd --permanent --add-port=82/tcp 
+Found and changed:
 
-Apply Changes    
+Edit
+Listen 80  
+to
 
-sudo firewall-cmd --reload                          
-Restart the Apache service to apply the changes:
-sudo systemctl restart httpd
-Verify Apache is Listening on Port 81
-sudo netstat -tulnp | grep httpd
-Expected output:
-tcp6  0  0 :::81   :::*   LISTEN  1234/httpd
-If this comes’s port listening to 81. Then check with browser and hit ip.
+Listen 81  
+Saved and exited the file.
+
+Updated firewall rules:
+
+sudo firewall-cmd --permanent --remove-port=80/tcp  
+sudo firewall-cmd --permanent --add-port=81/tcp  
+sudo firewall-cmd --reload  
+
+Restarted Apache to apply changes:
+
+sudo systemctl restart httpd  
+Verified if Apache is listening on port 81:
+
+sudo netstat -tulnp | grep httpd  
+Then, accessed the server using the EC2 Public IP:81 in the browser.
+
+3. EC2 Instance Setup (Windows)
+I created a Windows EC2 instance and placed website files inside the default IIS root directory:
+
+C:\inetpub\wwwroot
+Files inside this path will be displayed on the web server.
+
+4. Changing IIS Port (Windows)
+Opened IIS Manager → Selected Default Website → Bindings → Edit Port
+
+Changed the port number and saved the settings.
+
+Restarted IIS to apply changes.
+
+5. Configuring Windows Firewall to Allow New Port
+Opened Windows Firewall & Advanced Settings
+
+Added an Inbound Rule to allow traffic on the newly assigned port.
+
+6. Target Group Creation
+Created Target Group for Linux EC2 instance with its configured port (81).
+
+Created Target Group for Windows EC2 instance with its configured port.
+
+7. Load Balancer Configuration
+Created an Application Load Balancer
+
+Added Listeners for both Linux and Windows target groups
+
+After creating the load balancer, I accessed the Load Balancer DNS from my PC:
+
+http://<Load-Balancer-DNS>
+Verified that traffic was correctly distributed between the Linux (Apache - Facebook) and Windows (IIS - Instagram) instances.
+Refreshed the page multiple times to ensure requests alternated between both instances.
+Confirmed both target groups were Healthy in AWS Console.
+Successfully tested load balancing functionality.
 
 
 
 
-Fow windows machine 
-Create one Instance for Windows machine
-This is the path for windows pc
-C:\inetpub\wwwroot\
-Place the files inside this path, Files inside this will display on Server
 
-Steps to change port number in windows machine
-Search>Admin>Windows Tools>Select IIS>Default web page>Bindings>Edit Port>Enter port number >Don’t enter port name >Change&save port>Restart IIS 
-Then port number will be changed.
-Steps to allow firewall port that changed
-Goto firewall and advanced setting>Inbound rules>Bindings>Addport>Give access>Save
 
-Then port number will be allowed by firewall.
-Open the browser and hit ec2 instance Ip it will shows the result.
-Target group creation :
 
-•	Create target group for Linux machine with port number of Linux that entered
-•	Create target group for Windows machine with port number of Windows that entered 
-Load Balancer Creation:
-•	Create Load balancer 
-•	And add Listener for Linux machine created
-•	And add Listener for Windows machine created
 
